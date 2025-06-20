@@ -1,23 +1,16 @@
-# utils/data_loader.py
 import joblib
-import pandas as pd
+import numpy as np
 
-# Global cached model
-_MODEL = None
-
+# Lightweight model loader
 def load_model(model_path):
-    global _MODEL
-    if _MODEL is None:
+    try:
+        # Try direct load first
+        return joblib.load(model_path)
+    except Exception:
         try:
-            _MODEL = joblib.load(model_path)
+            # Fallback to numpy-based load
+            import numpy as np
+            with open(model_path, 'rb') as f:
+                return np.load(f, allow_pickle=True).item()
         except Exception as e:
             raise RuntimeError(f"Model loading failed: {str(e)}")
-    return _MODEL
-
-def load_data(file_path):
-    """Load only essential columns to reduce memory"""
-    cols = [
-        'release_date', 'release_year', 'total_tracks_in_album',
-        'explicit', 'track_name', 'Number Of Strems'
-    ]
-    return pd.read_csv(file_path, usecols=cols)
