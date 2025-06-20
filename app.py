@@ -1,5 +1,14 @@
 # Add to top of app.py
 import sys
+if sys.version_info >= (3, 13):
+    sys.exit("Python 3.13 is not supported. Please use Python 3.11")
+
+# Add after imports
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+# Add to top of app.py
+import sys
 import os
 
 # Reduce memory usage
