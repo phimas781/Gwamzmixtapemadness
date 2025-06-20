@@ -1,0 +1,60 @@
+# train_model.py
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+import joblib
+
+# Load and preprocess data
+df = pd.read_csv('gwamz_data.csv')
+
+# Feature engineering
+def extract_version_type(track_name):
+    track_name = track_name.lower()
+    if 'sped up' in track_name: return 'sped_up'
+    elif 'remix' in track_name: return 'remix'
+    elif 'instrumental' in track_name: return 'instrumental'
+    elif 'edit' in track_name: return 'edit'
+    elif 'jersey club' in track_name: return 'jersey_club'
+    else: return 'original'
+
+df['version_type'] = df['track_name'].apply(extract_version_type)
+df['release_date'] = pd.to_datetime(df['release_date'], format='%d/%m/%Y')
+df['release_month'] = df['release_date'].dt.month
+df['release_quarter'] = (df['release_date'].dt.month-1)//3 + 1
+df['release_dayofweek'] = df['release_date'].dt.dayofweek
+df['explicit'] = df['explicit'].astype(int)
+df['is_single'] = (df['album_type'] == 'single').astype(int)
+
+# Calculate time-based features
+df = df.sort_values('release_date')
+df['days_since_last_release'] = df.groupby('artist_id')['release_date'].diff().dt.days.fillna(0)
+df['release_sequence'] = df.groupby('artist_id').cumcount() + 1
+
+# Target
+df['streams'] = df['Number Of Strems']
+
+# One-hot encoding
+version_dummies = pd.get_dummies(df['version_type'], prefix='version')
+df = pd.concat([df, version_dummies], axis=1)
+
+# Final features
+features = [
+    'release_year', 'release_month', 'release_quarter', 'release_dayofweek',
+    'total_tracks_in_album', 'explicit', 'is_single', 
+    'days_since_last_release', 'release_sequence', 'artist_popularity',
+    'version_original', 'version_sped_up', 'version_remix',
+    'version_edit', 'version_jersey_club', 'version_instrumental'
+]
+
+# Prepare dataset
+X = df[features]
+y = df['streams']
+
+# Train model
+model = RandomForestRegressor(n_estimators=200, max_depth=7, random_state=42)
+model.fit(X, y)
+
+# Save model
+joblib.dump(model, 'gwamz_model.pkl')
+print("Model trained and saved as gwamz_model.pkl")
