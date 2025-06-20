@@ -1,3 +1,14 @@
+# Add to top of app.py
+import sys
+import os
+
+# Reduce memory usage
+os.environ["MPLCONFIGDIR"] = "/tmp/.matplotlib"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
+# Optimize imports
+if not hasattr(sys, 'argv'):
+    sys.argv = ['']
 import streamlit as st
 import pandas as pd
 import numpy as np
